@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+</head>
+<body>
+
+<style>
+    body {
+        color: black;
+        text-align: center;
+    }
+
+</style>
+
+<h1> Welcome to Team 20 API </h1>
+
+
+<p>Netherlands Rent Properties</p>
+
+
+<div>
+
+    <a href="/filter1/"><button>Filter 1</button></a>
+    <a href="/filter2/"><button>Filter 2</button></a>
+    <a href=""><button>Filter 3</button></a>
+    <a href=""><button>Filter 4</button></a>
+</div>
+
+
+<table>
+
+    <tr>
+        <th>Property_Id</th>
+        <th>Sqm</th>
+        <th>Active</th>
+        <th>Roomates</th>
+        <th>Latitude</th>
+        <th>Longitude</th>
+
+    </tr>
+    {% for item in query_results %}
+        <tr>
+            <td>{{ item.property_externalID }}</td>
+            <td>{{ item.property_areaSqm }}</td>
+            <td>{{ item.property_isRoomActive }}</td>
+            <td>{{ item.property_roommates }}</td>
+            <td>{{ item.location_latitude }}</td>
+            <td>{{ item.location_longitude }}</td>
+
+        </tr>
+    {% endfor %}
+</table>
+
+
+</body>
+</html>

@@ -1,0 +1,656 @@
+openapi: '3.0.2'
+info:
+  title: Web Engineering Properties on Kamernet API
+  version: '1.0'
+  description: |
+    specification for the API of group 20 Web Engineering
+servers:
+  - url: https://api.rug.we.group20
+
+
+components:
+  schemas:
+    Property:
+      type: object
+      
+      required:
+        - "externalID"
+      
+      properties:
+        externalID:
+          type: string
+          description: Unique ID of the property.
+        areaSqm:
+          type: integer
+          description: Area of the property in squared meters.
+        isRoomActive:
+          type: boolean
+          description: Indicates wheter the room is still available for renting.
+        roommates:
+          type: string
+          description: Indicates the amount of people that can live in the property.
+        userPhotoUrl:
+          type: string
+          description: Pictures of the property.
+        cost:
+          type: object
+          properties:
+            rent:
+              type: integer
+              description: The rent of the property in euros per month.
+            deposit:
+              type: integer
+              description: The deposit needed for the property.
+            additonalCost:
+              type: integer
+              description: Miscellaneous costs not included in the deposit.
+            registrationCost:
+              type: integer
+              description: The cost of registrating the lease.
+            cost-per-sqm:
+              type: integer
+              description: The cost per sqm.
+            
+        location: 
+          type: object
+          properties:
+            city:
+              type: string
+              description: The city in which the property is located.
+            latitude:
+              type: string
+              description: The latitude of the property.
+            longtitude:
+              type: string
+              description: The longtitude of the property.
+            postalCode:
+              type: string
+              description: The postal code of the property.
+
+    City:
+      type: object
+      required:
+        - "name"
+      properties:
+        properties:
+           type: array
+           items: 
+            $ref: "#/components/schemas/Property"
+        
+        statistics:
+          type: object
+          description: Returns the statistics of the given city.
+          $ref: "#/components/schemas/Statistics" 
+
+    Statistics:
+        type: object
+        properties:
+          mean:
+            type: integer
+            description: The mean for the rental cost and required deposit across all properties in a given city.
+          median:
+            type: integer
+            description: The median for the rental cost and required deposit across all properties in a given city.
+          std:
+            type: integer
+            description: The standard deviation for the rental cost and required deposit across all properties in a given city.
+ 
+
+  parameters:
+    order-by:
+      name: order-by     
+      in: query
+      required: false
+      description: Indicates the parameter we are ordeing by.
+      schema:
+        type: string
+        enum:
+          - rent
+          - cost per sqm
+    
+    order-dir:
+      name: order-dir
+      in: query
+      required: false
+      description: The directorion to order the indicated column
+      schema:
+        type: string
+        enum:
+          - desc
+          - asc
+
+    filter-city:
+      name: name 
+      in: path
+      required: true
+      description: The cities are filtered by name.
+      schema:
+        type: string
+    
+    filter-postalCode:
+      name: postalCode
+      in: query
+      required: true
+      description: The properties are filtered by postalCode.
+      schema:
+        type: string
+
+    filter-long:
+      name: longtitude
+      in: query
+      required: false
+      description: The properties are filtered by longtitude.
+      schema:
+        type: string
+    
+    filter-lat:
+      name: latitude
+      in: query
+      required: false
+      description: The properties are filtered by latitude.
+      schema:
+        type: string
+    
+    filter-id:
+      name: externalID
+      in: query
+      required: true
+      description: The properties are filtered by ID.
+      schema:
+        type: string
+    
+    filter-min-rent:
+      name: min-rent
+      in: query
+      required: false
+      description: The minimum amount of rent.
+      schema:
+        type: integer
+    
+    filter-max-rent:
+      name: max-rent
+      in: query
+      required: false
+      description: The maximum amount of rent.
+      schema:
+        type: integer
+    
+    filter-min-areaSqm:
+      name: areaSqm
+      in: query
+      required: true
+      description: The minimum square meters for the property.
+      schema:
+        type: integer
+    
+    return-type:
+      name: accept
+      in: query
+      required: false
+      description: The accepted representation of the payload of the request.
+      schema:
+        type: string
+        default: JSON
+        enum:
+        - JSON
+        - CSV
+
+    filter-max-roomates:
+      name: max-roomates
+      in: query
+      required: false
+      description: The maximum number of roomates.
+      schema:
+        type: string
+    
+    amount-of-results:
+      name: num-results
+      in: query
+      required: false
+      description: The length of the list of items to return.
+      schema:
+        type: integer
+        default: 10
+
+    
+  responses:
+
+    NoContent:
+      description: Properties deleted successfully.
+    
+    BadRequest:
+      description: Request was not well-formed, see error details
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error-message:
+                type: string
+                description: Error message detailing the problem with the request
+    
+    Forbidden:
+      description: Unauthorized operation.
+
+    NotFound:
+      description: Resource not found
+
+    NotAcceptable:
+      description: Missing or wrong parameters.
+    
+    ServerError:
+      description: Server error; no results, try again later  
+
+    
+paths:
+
+# Requirement 1:
+
+  /properties/{externalID}:
+    parameters:
+      - name: externalID
+        in: path
+        required: true
+        description:  Unique ID of the property
+        schema:
+          type: string
+    
+    get:
+      tags:
+      - Properties
+      summary: Retrieve the selected property
+      description: Retrieve the specific property given its unique ID
+      parameters:
+        - $ref: "#/components/parameters/return-type"
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Property"
+            text/csv:
+              schema: 
+                type: string
+                description: Retrived property data with csv format
+        '400':
+          $ref: "#/components/responses/BadRequest"
+        '403':
+          $ref: "#/components/responses/Forbidden"
+        '404':
+          $ref: "#/components/responses/NotFound"
+        '5XX':
+          $ref: "#/components/responses/ServerError"
+
+    post:
+      tags:
+      - Properties
+      summary: Creates a property
+      description: Creates a specific property given its unique ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Property"
+          text/csv:
+              schema: 
+                type: string
+                description: Property data with csv format
+      responses:
+        '201':
+          description: Property succesfully created
+          content:
+            application/json:
+              schema:
+                type: string
+                description: externalID of the created property
+          headers:
+            Location:
+              schema:
+                type: string
+                description: The URL of the created property
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: "#/components/responses/Forbidden"
+        '406':
+          $ref: '#/components/responses/NotAcceptable'
+        '409':
+          description: Property with the given ID already exists.
+          headers:
+            Location:
+              schema:
+                type: string
+              description: The URL of the pre-existing property.
+
+    put:
+      tags:
+      - Properties
+      summary: Update a property
+      description: Update a specific property by its unique ID
+      requestBody: 
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Property"
+          text/csv:
+              schema: 
+                type: string
+                description: Property data with csv format
+      responses:
+        '200':
+          description: "Property updated, returns the updated property"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Property"
+            text/csv:
+              schema:
+                type: string
+                description: Properly updated property data with csv format.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: "#/components/responses/Forbidden"
+        '404':
+          $ref: "#/components/responses/NotFound"
+        '406':
+          $ref: '#/components/responses/NotAcceptable'
+        '5XX':
+          $ref: '#/components/responses/ServerError'
+    
+    delete:
+      tags: 
+      - Properties
+      summary: Delete a property.
+      description: Deletes a specific property given the unique ID
+      responses:
+        '204':
+          $ref:  "#/components/responses/NoContent"
+        '400':
+          $ref: "#/components/responses/BadRequest"
+        '403':
+          $ref: "#/components/responses/Forbidden"
+        '404':
+          $ref: "#/components/responses/NotFound"
+        '5XX':
+          $ref: '#/components/responses/ServerError'
+
+
+# Requirment 2:
+
+  /properties:
+
+    get:
+      tags: 
+      - Properties
+      summary: Retrieves a list of properties. 
+      description: Retrieves the list of properties, possibly filtered by longtitude and/or latitude.
+      
+      parameters:
+        - $ref: "#/components/parameters/filter-lat"
+        - $ref: "#/components/parameters/filter-long"
+        - $ref: "#/components/parameters/return-type"
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: array
+                items: 
+                  $ref: "#/components/schemas/Property"
+            text/csv:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: Retrived property data with csv format
+              
+        '400':
+          $ref: "#/components/responses/BadRequest"
+        '403':
+          $ref: "#/components/responses/Forbidden"
+        '404':
+          $ref: "#/components/responses/NotFound"
+        '5XX':
+          $ref: "#/components/responses/ServerError"
+    
+    put:
+      tags:
+      - Properties
+      summary: Updates a list of properties
+      description: Updates a list of properties possibliy filtered by latitude and/or longtitude.
+      
+      parameters:
+        - $ref: "#/components/parameters/filter-lat"
+        - $ref: "#/components/parameters/filter-long"
+      responses:
+        '200':
+          description: "Properties updated, returns list of updated properties."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Property"
+            text/csv:
+              schema: 
+                type: array
+                items:
+                  type: string
+                  description: Updated property data with csv format
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: "#/components/responses/Forbidden"
+        '406':
+          $ref: '#/components/responses/NotAcceptable'
+        '5XX':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      tags:
+      - Properties
+      summary: Deletes a list of properties
+      description: Deletes a list of properties, possibly filtered by latitude and/or longtitude
+      parameters: 
+      - $ref: "#/components/parameters/filter-lat"
+      - $ref: "#/components/parameters/filter-long"
+      responses:
+        '204':
+          $ref:  "#/components/responses/NoContent"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: "#/components/responses/Forbidden"
+        '404':
+          $ref: "#/components/responses/NotFound"
+        '5XX':
+          $ref: '#/components/responses/ServerError'
+        
+
+# Requirement 3, 4 and 5: 
+    
+  /cities/{name}/properties:
+
+    get:
+      tags:
+      - Cities
+      summary: Retreives a list of available properties in a city
+      description: Retreives the list of available properties in the city
+      parameters:
+        - $ref: "#/components/parameters/filter-city"
+        - $ref: "#/components/parameters/filter-min-rent"
+        - $ref: "#/components/parameters/filter-max-rent"
+        - $ref: "#/components/parameters/order-by"
+        - $ref: "#/components/parameters/order-dir"
+        - $ref: "#/components/parameters/amount-of-results"
+        - $ref: "#/components/parameters/return-type"
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Property"
+            text/csv:
+              schema: 
+                type: array
+                items: 
+                  type: string
+                  description: Retrived property data with csv format
+        '400':
+          $ref: "#/components/responses/BadRequest"
+        '403':
+          $ref: "#/components/responses/Forbidden"
+        '404':
+          $ref: "#/components/responses/NotFound"
+        '5XX':
+          $ref: "#/components/responses/ServerError"
+  
+
+# Requirement 6:
+
+  /cities/{name}/statistic:
+
+    get:
+      tags:
+      - Cities
+      summary: Retreives the statistics of a city
+      description: Retrieves the statistics of a city with the given name.
+      parameters:
+        - $ref: "#/components/parameters/filter-city"
+        - $ref: "#/components/parameters/return-type"
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Statistics" 
+            text/csv:
+              schema: 
+                type: string
+                description: Retrived statistics data with csv format
+        '400':
+          $ref: "#/components/responses/BadRequest"
+        '403':
+          $ref: "#/components/responses/Forbidden"
+        '404':
+          $ref: "#/components/responses/NotFound"
+        '5XX':
+          $ref: "#/components/responses/ServerError"
+  
+  
+# Additional endpoints:
+
+  /cities:
+
+    get:
+      tags:
+      - Cities
+      summary:  Retrieves the list of cities
+      description: Retrieves the list of cities
+      parameters:
+        - $ref: "#/components/parameters/return-type"
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/City"
+            text/csv:
+              schema: 
+                type: array
+                items:
+                  type: string
+                  description: Retrived city data with csv format
+        '400':
+          $ref: "#/components/responses/BadRequest"
+        '403':
+          $ref: "#/components/responses/Forbidden"
+        '404':
+          $ref: "#/components/responses/NotFound"
+        '5XX':
+          $ref: "#/components/responses/ServerError"
+  
+  /cities/{name}:
+
+    get:
+      tags:
+      - Cities
+      summary: Retrieves a city
+      description: Retrieves the city with the given name.
+      parameters:
+        - $ref: "#/components/parameters/filter-city"
+        - $ref: "#/components/parameters/return-type"
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/City"
+            text/csv:
+              schema: 
+                type: string
+                description: Retrived city data with csv format
+        '400':
+          $ref: "#/components/responses/BadRequest"
+        '403':
+          $ref: "#/components/responses/Forbidden"
+        '404':
+          $ref: "#/components/responses/NotFound"
+        '5XX':
+          $ref: "#/components/responses/ServerError"
+
+
+  # Retrieve all the properties in a neighborhood (given by the postalCode) with a maximum rent, min m^2 and maximum number of roommates specified by the user
+  # ordered by high/low cost
+  
+  /properties/{postalCode}:
+
+    get:
+      tags:
+      - Properties
+      summary: Retrieves the properties with the specific characteristics
+      description: Retrieves the properties of the given neighborhood (postalCode), given the max rent, max roomates and min m^2
+      parameters:
+        - $ref: "#/components/parameters/filter-postalCode"
+        - $ref: "#/components/parameters/filter-max-rent"
+        - $ref: "#/components/parameters/filter-min-areaSqm"
+        - $ref: "#/components/parameters/filter-max-roomates"
+        - $ref: "#/components/parameters/order-by"
+        - $ref: "#/components/parameters/order-dir"
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Property"
+            text/csv:
+              schema: 
+                type: array
+                items:
+                  type: string
+                  description: Retrived property data with csv format
+        '400':
+          $ref: "#/components/responses/BadRequest"
+        '403':
+          $ref: "#/components/responses/Forbidden"
+        '404':
+          $ref: "#/components/responses/NotFound"
+        '5XX':
+          $ref: "#/components/responses/ServerError"
+
